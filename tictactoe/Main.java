@@ -1,161 +1,154 @@
 package tictactoe;
 
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
-    static String[] chars = new String[9];
-    static boolean isXWin = false;
-    static boolean isOWin = false;
-    static boolean isGameFinished = false;
-    static Scanner scanner = new Scanner(System.in);
+    private static final Scanner SCANNER = new Scanner(System.in);
 
     public static void main(String[] args) {
-        start();
-        middleGame();
-//        end();
-    }
-
-    private static void start() {
-        System.out.print("Enter 9 cells (X, O or _): ");
-        String input = scanner.nextLine();
-        init(input);
-        printField(chars);
-    }
-
-    private static void end() {
-        printField(chars);
-        stateOfGame(chars);
-    }
-
-    private static void middleGame() {
-        int index = -1;
-        System.out.print("Enter the coordinates: ");
-        String[] input = scanner.nextLine().trim().split("\\s+");
-        if (input.length != 2) {
-            System.out.println("You should enter numbers!");
-            middleGame();
-            return;
-        }
-
-        try {
-            int x = Integer.parseInt(input[0]);
-            int y = Integer.parseInt(input[1]);
-            if (x < 1 || x > 3 || y < 1 || y > 3) {
-                System.out.println("Coordinates should be from 1 to 3!");
-                middleGame();
-                return;
-            } else {
-                index = 3 * (3 - y) + x - 1;
-            }
-        } catch (Exception e) {
-            System.out.println("You should enter numbers!");
-            middleGame();
-            return;
-        }
-
-        if (index == -1) {
-            System.out.println("Error");
-            return;
-        }
-
-        if (chars[index].equals("X") || chars[index].equals("O")) {
-            System.out.println("This cell is occupied! Choose another one!");
-            middleGame();
-            return;
+        Stone[] stones = new Stone[9];
+        Arrays.fill(stones, Stone.FREE);
+        Stone current = Stone.FREE;
+        GameStatus gameStatus;
+        do {
+            current = current.opposite();
+            print(stones);
+            move(stones, current);
+            gameStatus = check(stones, current);
+        } while (gameStatus == GameStatus.NONE);
+        print(stones);
+        if (gameStatus == GameStatus.WIN) {
+            System.out.println(current + " wins");
         } else {
-            chars[index] = "X";
-        }
-
-        printField(chars);
-    }
-
-    private static void init(String input) {
-        for (int i = 0; i < 9; i++) {
-            chars[i] = String.valueOf(input.charAt(i));
+            System.out.println("Draw");
         }
     }
 
-    private static void printField(String[] chars) {
-        int index = 0;
-
-        System.out.println("---------");
-        for (int i = 0; i < 3; i++) {
-            System.out.print("| ");
-            for (int j = 0; j < 3; j++) {
-                System.out.print(chars[index] + " ");
-                index++;
+    private static void print(Stone[] stones) {
+        int length = stones.length;
+        int size = (int) Math.sqrt(length);
+        for (int i = 0; i < length; i++) {
+            System.out.print("-");
+        }
+        System.out.print("\n| ");
+        for (int i = 0; i < length; i++) {
+            if (i >= size && i % size == 0) {
+                System.out.print("|\n| ");
             }
-            System.out.println("|");
+            System.out.print(stones[i] + " ");
         }
-        System.out.println("---------");
+        System.out.println("|");
+        for (int i = 0; i < length; i++) {
+            System.out.print("-");
+        }
+        System.out.println();
     }
 
-    private static void stateOfGame(String[] chars) {
-        String horizontal1 = chars[0] + chars[1] + chars[2];
-        String horizontal2 = chars[3] + chars[4] + chars[5];
-        String horizontal3 = chars[6] + chars[7] + chars[8];
-        String vertical1 = chars[0] + chars[3] + chars[6];
-        String vertical2 = chars[1] + chars[4] + chars[7];
-        String vertical3 = chars[2] + chars[5] + chars[8];
-        String diagonal1 = chars[0] + chars[4] + chars[8];
-        String diagonal2 = chars[2] + chars[4] + chars[6];
-
-        if (horizontal1.equals("XXX") || horizontal2.equals("XXX") || horizontal3.equals("XXX")
-                || vertical1.equals("XXX") || vertical2.equals("XXX") || vertical3.equals("XXX")
-                || diagonal1.equals("XXX") || diagonal2.equals("XXX"))  {
-            isXWin = true;
-        }
-
-        if (horizontal1.equals("OOO") || horizontal2.equals("OOO") || horizontal3.equals("OOO")
-                || vertical1.equals("OOO") || vertical2.equals("OOO") || vertical3.equals("OOO")
-                || diagonal1.equals("OOO") || diagonal2.equals("OOO"))  {
-            isOWin = true;
-        }
-
-        if (!chars.equals(" ") && !chars.equals("_")) {
-            isGameFinished = true;
-        }
-
-        if (isGameImpossible(chars)) {
-            System.out.println("Impossible");
-            return;
-        }
-
-        if (isOWin) {
-            System.out.println("O wins");
-            return;
-        }
-
-        if (isXWin) {
-            System.out.println("X wins");
-            return;
-        }
-
-        if (!isGameFinished) {
-            System.out.println("Game not finished");
-            return;
-        }
-
-        System.out.println("Draw");
-    }
-
-    private static boolean isGameImpossible(String[] chars) {
-        boolean isItImpossible = false;
-        int countX = 0;
-        int countO = 0;
-
-        for (int i = 0; i < 9; i++) {
-            if (chars[i].equals("X")) {
-                countX++;
+    private static void move(Stone[] stones, Stone stone) {
+        do {
+            System.out.println("Enter the coordinates: ");
+            String line = SCANNER.nextLine();
+            int column;
+            int row;
+            try {
+                String[] coordinates = line.split("\\s");
+                column = Integer.parseInt(coordinates[0]);
+                row = Integer.parseInt(coordinates[1]);
+                if (column > 3 || column < 1 || row > 3 || row < 1) {
+                    System.out.println("Coordinates should be from 1 to 3!");
+                    continue;
+                }
+            } catch (Exception e) {
+                System.out.println("You should enter numbers!");
+                continue;
             }
-            if (chars[i].equals("O")) {
-                countO++;
+            int index = 8 + column - 3 * row;
+            if (stones[index] == Stone.FREE) {
+                stones[index] = stone;
+                break;
+            } else {
+                System.out.println("This cell is occupied! Choose another one!");
+            }
+        } while (true);
+    }
+
+    private static GameStatus check(Stone[] stones, Stone stone) {
+        if (win(stones, stone)) {
+            return GameStatus.WIN;
+        } else if (!hasEmpty(stones)) {
+            return GameStatus.DRAW;
+        }
+        return GameStatus.NONE;
+    }
+
+    public static boolean win(Stone[] stones, Stone stone) {
+        boolean horizontal = (stone == stones[0] && stone == stones[1] && stone == stones[2])
+                ||
+                (stone == stones[3] && stone == stones[4] && stone == stones[5])
+                ||
+                (stone == stones[6] && stone == stones[7] && stone == stones[8]);
+        boolean vertical = (stone == stones[0] && stone == stones[3] && stone == stones[6])
+                ||
+                (stone == stones[1] && stone == stones[4] && stone == stones[7])
+                ||
+                (stone == stones[2] && stone == stones[5] && stone == stones[8]);
+        boolean diagonal = (stone == stones[0] && stone == stones[4] && stone == stones[8])
+                ||
+                (stone == stones[2] && stone == stones[4] && stone == stones[6]);
+        return horizontal || vertical || diagonal;
+    }
+
+    public static boolean hasEmpty(Stone[] stones) {
+        for (Stone stone : stones) {
+            if (stone == Stone.FREE) {
+                return true;
             }
         }
+        return false;
+    }
 
-        if (isOWin && isXWin || Math.abs(countO - countX) > 1) {
-            isItImpossible = true;
-        }
-        return isItImpossible;
+    enum Stone {
+        X {
+            @Override
+            public String toString() {
+                return "X";
+            }
+
+            @Override
+            public Stone opposite() {
+                return O;
+            }
+        },
+        O {
+            @Override
+            public String toString() {
+                return "O";
+            }
+
+            @Override
+            public Stone opposite() {
+                return X;
+            }
+        },
+        FREE {
+            @Override
+            public String toString() {
+                return " ";
+            }
+
+            @Override
+            public Stone opposite() {
+                return X;
+            }
+        };
+
+        public abstract Stone opposite();
+    }
+
+    enum GameStatus {
+        WIN,
+        DRAW,
+        NONE
     }
 }
